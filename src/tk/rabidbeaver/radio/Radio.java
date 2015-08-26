@@ -246,11 +246,11 @@ public class Radio extends Activity {
 		}
 	}
 	
-	@Override
+	/*@Override
 	protected void onStop(){
 		rw.deinitRadio();
 		super.onStop();
-	}
+	}*/
 	
 	@Override
 	protected void onStart(){
