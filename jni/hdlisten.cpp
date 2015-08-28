@@ -53,6 +53,11 @@ HDListen::HDListen() {//public
 	lasttune = "";
 	valueset = true;
 	listenThread = 0;
+	cktotal = 0;
+	ioport = 0;
+	j_cls = 0;
+	s_Jvm = 0;
+	hdvals = 0;
 	//bq=0;
 	//TODO I'm not crazy about this;
 	bq = (int *)malloc(sizeof(int)*1024);
@@ -109,52 +114,6 @@ void HDListen::listentoradio() {//public
 		pthread_create(&listenThread, NULL, StartHDListener, this);
 	return;
 }
-
-/**
- * Set a particular HD value from data incoming from the radio.  This is
- * thread safe so there won't be confusion between values being set or got.
- * If the subchannel is changed, the hdtitle and hdartist are changed to match
- * the current subchannel.  If the frequency or band are changed, then all the
- * station data is reset to empty so it won't lag behind the station being changed.
- * @param hdkey name of value to set
- * @param hdval value to set it to
- */
-/*void HDListen::sethdval(string hdkey, string hdval) {//protected
-	string xfer;
-	pthread_mutex_lock(&valLock);
-	if (hdkey == "hdsubchannel") {
-		sscanf(hdval.c_str(), "%d", &currentsubchannel);
-		radiovals["hdtitle"] = hdtitles[currentsubchannel];
-		radiovals["hdartist"] = hdartists[currentsubchannel];
-	}
-	if (hdkey == "tune") {
-		radiovals["frequency"] = currfreq;
-		radiovals["band"] = currband;
-		radiovals["hdsubchannel"] = "0";
-		radiovals["hdsubchannelcount"] = "0";
-		radiovals["hdactive"] = "false";
-		radiovals["hdstreamlock"] = "false";
-		radiovals["rdsenable"] = "false";
-		radiovals["rdsgenre"] = "";
-		radiovals["rdsprogramservice"] = "";
-		radiovals["rdsradiotext"] = "";
-		radiovals["hdcallsign"] = "";
-		radiovals["hdstationname"] = "";
-		radiovals["hdtitle"] = "";
-		radiovals["hdartist"] = "";
-		hdtitles.clear();
-		hdartists.clear();
-	}
-	if (hdkey == "hdsubchannel" || hdkey == "tune" || hdkey == "volume" ||
-			hdkey == "bass" || hdkey == "treble" || hdkey == "mute" || hdkey == "power") {
-		time(&changetimer);
-	}
-	radiovals[hdkey] = hdval;
-// 	if (hdkey == "tune")
-// 		lasttune = hdval;
-	pthread_mutex_unlock(&valLock);
-	return;
-}*/
 
 /**
  * Get a value from our settings.  These values are set from the data retrieved from the
@@ -343,13 +302,13 @@ string HDListen::decodemsg() {//protected
 	msgfmt = hdvals->getformat(msgname);
 	msgval = curmsg;
 	if (msgfmt == "boolean") {
-LOGD("DECODEMSG: boolean");
+//LOGD("DECODEMSG: boolean");
 		if (msgval == hdvals->getconstant("one"))
 			msgval = "true";
 		else
 			msgval = "false";
 	} else if (msgfmt == "int") {
-LOGD("DECODEMSG: int");
+//LOGD("DECODEMSG: int");
 		ival = hexbytestoint(msgval);
 		if (hdvals->getscaled(msgname)) {
 			ival = (ival * 100)/90;
@@ -357,12 +316,12 @@ LOGD("DECODEMSG: int");
 		sprintf(curmsg, "%d", ival);
 		msgval = curmsg;
 	} else if (msgfmt == "string") {
-LOGD("DECODEMSG: string");
+//LOGD("DECODEMSG: string");
 		msgval = curmsg;
 		msgval = msgval.substr(20, msgval.size() - 20);
 		msgval = hexbytestostring(msgval);
 	} else if (msgfmt == "band:int") {
-LOGD("DECODEMSG: band:int");
+//LOGD("DECODEMSG: band:int");
 		msgval = curmsg;
 		val1 = msgval.substr(0, 19);
 		val2 = msgval.substr(20, 19);
@@ -406,10 +365,10 @@ LOGD("DECODEMSG: band:int");
 		}
 */
 	} else if (msgfmt == "none" || msgfmt == "int:string") {
-LOGD("DECODEMSG: int:string");
+//LOGD("DECODEMSG: int:string");
 		msgval = "";
 	}
-	LOGD("Message name: %s, Value: %s",msgname.c_str(),msgval.c_str());
+//	LOGD("Message name: %s, Value: %s",msgname.c_str(),msgval.c_str());
 	//sethdval(msgname, msgval);
 
 	//here send it up to java.
@@ -424,13 +383,10 @@ void HDListen::passJvm(JavaVM * jvm, jclass jcls){
 
 void HDListen::callback(string name, string val){
 	JNIEnv * env;
-	LOGD("CALLBACK RUNNING");
+//	LOGD("CALLBACK RUNNING");
 
 	if (s_Jvm != NULL){
 		s_Jvm->GetEnv((void**)&env, JNI_VERSION_1_6);
-	}
-	if (s_Jvm == NULL){
-		LOGD("WTF?");
 	}
 
 	s_Jvm->AttachCurrentThread(&env,NULL);
@@ -485,7 +441,7 @@ void HDListen::procmsg() {//protected
 		curmsg[cp] = 000;
 	}
 	usleep(naptime);
- 	LOGD("Message... code: %s, type: %s, value: %s",msgcode,msgtype,curmsg);
+// 	LOGD("Message... code: %s, type: %s, value: %s",msgcode,msgtype,curmsg);
 	decodemsg();
 	return;
 }
@@ -503,7 +459,7 @@ void HDListen::handlebyte(unsigned char cIn) {//protected
 	unsigned int cksum;
 
 	
-LOGD("Processing byte: %x",cIn);
+//LOGD("Processing byte: %x",cIn);
 // 	cout << "Processing byte: ";
 // 	chout(cIn);
 	if (cIn != 0xA4 && !havecode) {
@@ -548,7 +504,7 @@ LOGD("Processing byte: %x",cIn);
 			if (cIn == 0x48)
 				cIn = 0xA4;
 		}
-LOGD("adding byte to bq[%d]:%x",msgin, cIn);
+//LOGD("adding byte to bq[%d]:%x",msgin, cIn);
  		bq[msgin] = cIn;
 		cktotal += cIn;
  		cout << "Current checksum: " << cktotal << endl;

@@ -16,7 +16,8 @@ class HDListen {
 		 bool verbose;
 		 bool keepReading, havecode, valueset, escChar, lengthWait;
 		 char msgcode[16], msgtype[16], curmsg[1024];
-		 int msglen, msgin, currentsubchannel, lastsubchannel, lastsubchannelcount;
+		 int msglen, msgin, lastsubchannelcount;
+		 //currentsubchannel,lastsubchannel,
 		 unsigned int cktotal;
 		 unsigned long naptime;
 		 string ctype, currentmsg, currfreq, currband, lasttune;
@@ -26,7 +27,7 @@ class HDListen {
 		 map<int,string> hdartists;
 		 pthread_t listenThread;
 		 pthread_mutex_t valLock, trackLock;
-		 time_t changetimer;
+		 //time_t changetimer;
 		 HDVals* hdvals;
 		 LinuxPort* ioport;
 		 JavaVM * s_Jvm;

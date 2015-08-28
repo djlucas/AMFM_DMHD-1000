@@ -11,5 +11,7 @@
     <string name="seekdown">&lt;&lt; Seek Down</string>
     <string name="tuneup">Tune Up &gt;</string>
     <string name="tunedown">&lt; Tune Down</string>
+    <string name="important">Favorite</string>
+    <string name="notimportant">Not Favorite</string>
 
 </resources>

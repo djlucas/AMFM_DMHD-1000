@@ -4,13 +4,15 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class Radio extends Activity {
@@ -18,12 +20,15 @@ public class Radio extends Activity {
 	private RadioWrapper rw;
 	private RadioDB rdb;
 	private Button channelbtn;
+	private ImageButton togglefav;
 	private TextView radiotext;
 	private TextView programservice;
 	private boolean lastPower = true;
 	private String lastChannel = "1010 AM";
 	private String lastChannelAM = "1010 AM";
 	private String lastChannelFM = "99.9 FM";
+	private boolean lastChannelIsFav = false;
+	private LinearLayout favorites;
 	
 	private boolean band_fm;
 	
@@ -80,7 +85,7 @@ public class Radio extends Activity {
 				AlertDialog dialog = builder.create();
 				
 				LayoutInflater inflater=Radio.this.getLayoutInflater();
-				View layout=inflater.inflate(R.layout.dialog_channel,null);
+				View layout=inflater.inflate(R.layout.dialog_channel,(ViewGroup)getWindow().getDecorView().findViewById(R.layout.activity_radio));
 				dialog.setView(layout);
 				channelinput = (EditText) layout.findViewById(R.id.channel);
 				dialogband = (Button) layout.findViewById(R.id.dialog_amfm);
@@ -109,6 +114,23 @@ public class Radio extends Activity {
 					rw.sendCommand("tune "+lastChannelFM);
 					band_fm = true;
 				}
+			}
+		});
+		
+		togglefav = (ImageButton) this.findViewById(R.id.favorite);
+		togglefav.setOnClickListener(new ImageButton.OnClickListener(){
+			@Override
+			public void onClick(View v) {
+				if (lastChannelIsFav){
+					((ImageButton) v).setImageResource(R.drawable.ic_star);
+					lastChannelIsFav = false;
+					rdb.setFav(lastChannel, false);
+				} else {
+					((ImageButton) v).setImageResource(R.drawable.ic_star_selected);
+					lastChannelIsFav = true;
+					rdb.setFav(lastChannel, true);
+				}
+				refreshfav();
 			}
 		});
 		
@@ -143,6 +165,57 @@ public class Radio extends Activity {
 				rw.sendCommand("tunedown");
 			}
 		});
+		
+		favorites = (LinearLayout) this.findViewById(R.id.favorites);
+		
+		refreshfav();
+	}
+	
+	public void refreshfav(){
+		favorites.removeAllViews();
+		String[] favs = rdb.getAllFavorites();
+		for (int i=0; i<favs.length; i++){
+			Button b = new Button(Radio.this);
+			b.setOnClickListener(new Button.OnClickListener(){
+				@Override
+				public void onClick(View v) {
+					rw.sendCommand("tune "+((Button)v).getText());
+				}
+			});
+			b.setOnLongClickListener(new Button.OnLongClickListener(){
+				@Override
+				public boolean onLongClick(View v) {
+					final String channel = ((Button)v).getText().toString();
+					AlertDialog.Builder builder = new AlertDialog.Builder(Radio.this);
+					builder.setTitle("Move Favorite:");
+					builder.setPositiveButton("Right -->", new DialogInterface.OnClickListener() {
+				           public void onClick(DialogInterface dialog, int id) {
+				        	   rdb.moveFav(channel, true);
+				        	   refreshfav();
+				        	   dialog.dismiss();
+				           }
+				       });
+					builder.setNeutralButton("Cancel",  new DialogInterface.OnClickListener() {
+				           public void onClick(DialogInterface dialog, int id) {
+				        	   dialog.dismiss();
+				           }
+				       });
+					builder.setNegativeButton("<-- Left", new DialogInterface.OnClickListener() {
+				           public void onClick(DialogInterface dialog, int id) {
+				        	   rdb.moveFav(channel, false);
+				        	   refreshfav();
+				        	   dialog.dismiss();
+				           }
+				       });
+
+					AlertDialog dialog = builder.create();
+					dialog.show();
+					return false;
+				}
+			});
+			b.setText(favs[i]);
+			favorites.addView(b);
+		}
 	}
 	
 	public void updateStatus(final String name, final String value){
@@ -187,6 +260,13 @@ public class Radio extends Activity {
 						channelbtn.setText(value);
 						programservice.setText("");
 						radiotext.setText("");
+						
+						lastChannelIsFav = rdb.isFavorite(value);
+						if (lastChannelIsFav){
+							togglefav.setImageResource(R.drawable.ic_star_selected);
+						} else {
+							togglefav.setImageResource(R.drawable.ic_star);
+						}
 					}
 					if (name.equalsIgnoreCase("signalstrength")){
 						/*
@@ -196,7 +276,7 @@ public class Radio extends Activity {
 						 * then convert to bars and percent.
 						 */
 						int ss = Integer.parseInt(value);
-						Log.d("RADIO","SS: "+ss);
+						//Log.d("RADIO","SS: "+ss);
 						if (ss < 400) ss = 0;
 						else if (ss > 2850) ss = 100;
 						else ss = (int)(((float) (ss - 400) / (float) 2450) * 100);
@@ -205,7 +285,7 @@ public class Radio extends Activity {
 						if (ss > 40) bars++;
 						if (ss > 60) bars++;
 						if (ss > 80) bars++;
-						Log.d("RADIO",bars+" Bars, "+ss+"%");
+						//Log.d("RADIO",bars+" Bars, "+ss+"%");
 						if (signalmenu != null){
 							switch (bars){
 								case 0:
