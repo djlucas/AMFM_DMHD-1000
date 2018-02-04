@@ -2,7 +2,9 @@ package tk.rabidbeaver.radio;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -97,6 +99,7 @@ public class Radio extends Activity {
 						if (dialogband.getText().toString().equalsIgnoreCase("AM"))
 							dialogband.setText("FM");
 						else dialogband.setText("AM");
+
 					}
 				});
 				dialog.show();
@@ -217,6 +220,11 @@ public class Radio extends Activity {
 			favorites.addView(b);
 		}
 	}
+
+	public void setPower(boolean on){
+		AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+		audioManager.setParameters("line_in_ctl="+(on?"play":"stop"));
+	}
 	
 	public void updateStatus(final String name, final String value){
 		if (name.equalsIgnoreCase("power")){
@@ -225,6 +233,7 @@ public class Radio extends Activity {
 			rw.sendCommand("volume 50");
 			rw.sendCommand("tune "+lastChannel);
 			rw.sendCommand("dtr 1");
+			setPower(true);
 			if (powermenu != null){
 				runOnUiThread(new Runnable(){
 					@Override
@@ -388,12 +397,14 @@ public class Radio extends Activity {
 			if (lastPower){
 				powermenu.setIcon(R.drawable.ic_action_volume_muted);
 				rw.sendCommand("dtr 0");
+				setPower(false);
 				lastPower = false;
 				rdb.setLastPower(false);
 			} else {
 				powermenu.setIcon(R.drawable.ic_action_volume_on);
 				rw.initRadio();
 				rw.sendCommand("dtr 1");
+				setPower(true);
 			}
 			return true;
 		}
